@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">QQ Emoji Reply</string>
+    <string name="module_description">NTQQ automatic message emoji reaction module (scaffold; QQ-version adapter not yet implemented).</string>
+</resources>
