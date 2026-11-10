@@ -1,4 +1,4 @@
-esources>
+<resources>
     <string name="app_name">QQ Emoji Reply</string>
     <string name="module_description">NTQQ auto reaction module for QQ 9.2.85. Configuration UI and rule engine scaffold; native reaction adapter is not yet verified.</string>
 </resources>
