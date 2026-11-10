@@ -5,10 +5,7 @@ import de.robv.android.xposed.XSharedPreferences;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-/**
- * Xposed entry point. Intentionally fail-closed until the QQ 9.2.85
- * incoming-message event and reaction API have been verified.
- */
+/** Xposed entry point; host-specific operations are isolated behind QQHostAdapter. */
 public final class QQEmojiReplyEntry implements IXposedHookLoadPackage {
     private static final String QQ_PACKAGE = "com.tencent.mobileqq";
     private static final String MODULE_PACKAGE = "dev.neetsama.qqemojireply";
@@ -16,30 +13,35 @@ public final class QQEmojiReplyEntry implements IXposedHookLoadPackage {
     @Override public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) {
         if (!QQ_PACKAGE.equals(lpparam.packageName)) return;
 
-        XposedBridge.log("QQEmojiReply: loaded process=" + lpparam.processName
-                + ", host version must be verified as QQ 9.2.85");
-
+        XposedBridge.log("QQEmojiReply: loaded process=" + lpparam.processName);
         try {
-            XSharedPreferences prefs = new XSharedPreferences(MODULE_PACKAGE, "qq_emoji_reply");
-            prefs.makeWorldReadable();
+            XSharedPreferences prefs =
+                    new XSharedPreferences(MODULE_PACKAGE, "qq_emoji_reply");
             prefs.reload();
-            boolean enabled = prefs.getBoolean("enabled", false);
-            XposedBridge.log("QQEmojiReply: config read, enabled=" + enabled);
+            ReactionConfig config = ReactionConfig.from(prefs);
 
-            if (!enabled) return;
+            XposedBridge.log("QQEmojiReply: config enabled=" + config.enabled
+                    + ", targetUins=" + config.targetUins.size()
+                    + ", targetGroups=" + config.targetGroups.size()
+                    + ", emojiIds=" + config.emojiIds.length
+                    + ", delayMs=" + config.delayMillis);
+            if (!config.enabled) return;
 
-            // TODO QQ 9.2.85 only:
-            // 1. Resolve the incoming message event using verified host classes.
-            // 2. Extract conversation/group ID, sender UIN, and stable message ID.
-            // 3. Match targetUins/targetGroups.
-            // 4. Call the verified native reaction method with the QQ emoji ID.
-            //
-            // Do not use guessed class/method names here. Wrong internal hooks
-            // can crash QQ or silently send the wrong operation.
-            XposedBridge.log("QQEmojiReply: rules are enabled, but reaction adapter "
-                    + "is not connected yet; no messages will be modified.");
+            QQHostAdapter adapter = QQHostAdapterFactory.create(lpparam.classLoader);
+            if (adapter == null) {
+                XposedBridge.log("QQEmojiReply: no verified QQ 9.2.85 adapter found; "
+                        + "event pipeline is ready but hooks are not installed.");
+                return;
+            }
+
+            ReactionBackend backend = adapter::addReaction;
+            AutoReactionEngine engine = new AutoReactionEngine(config, backend);
+            boolean installed = adapter.installMessageListener(
+                    lpparam.classLoader, engine::onIncomingMessage);
+            XposedBridge.log("QQEmojiReply: incoming-message hook installed=" + installed);
+            if (!installed) engine.shutdown();
         } catch (Throwable t) {
-            XposedBridge.log("QQEmojiReply config error: " + t);
+            XposedBridge.log("QQEmojiReply init failed: " + t);
         }
     }
 }
