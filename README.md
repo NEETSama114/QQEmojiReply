@@ -2,6 +2,10 @@
 
 一个面向 Android NTQQ + LSPosed 的自动表情回应模块起始工程。
 
+<a href="https://github.com/NEETSama114/QQEmojiReply/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/NEETSama114/QQEmojiReply?label=Stars"></a>
+<a href="https://github.com/NEETSama114/QQEmojiReply/releases"><img alt="GitHub all releases" src="https://img.shields.io/github/downloads/NEETSama114/QQEmojiReply/total?label=Downloads"></a>
+
+
 ## 目标功能
 
 - 监听收到的群聊消息
